@@ -1150,3 +1150,33 @@ button {
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
+
+/* Floating cart quantity badge on menu items */
+.card-qty-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #d66c46;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(214, 108, 70, 0.4);
+  z-index: 5;
+  border: 1.5px solid #ffffff;
+  animation: popBadge 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popBadge {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

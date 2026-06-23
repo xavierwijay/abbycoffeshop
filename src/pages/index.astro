@@ -333,31 +333,68 @@ import { categories, menuItems } from '../data/menuData.js';
       .join('');
   }
 
+  function getItemQtyInCart(id) {
+    return state.cart
+      .filter((item) => item.id === id)
+      .reduce((sum, item) => sum + item.qty, 0);
+  }
+
+  function updateMenuBadges() {
+    menuItems.forEach((item) => {
+      const qtyInCart = getItemQtyInCart(item.id);
+      const addButton = menuGrid.querySelector(`[data-add="${item.id}"]`);
+      if (addButton) {
+        const card = addButton.closest('.menu-card');
+        const visual = card.querySelector('.product-visual');
+        let badge = visual.querySelector('.card-qty-badge');
+        if (qtyInCart > 0) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'card-qty-badge';
+            visual.appendChild(badge);
+          }
+          badge.textContent = qtyInCart;
+        } else {
+          if (badge) {
+            badge.remove();
+          }
+        }
+      }
+    });
+  }
+
   function renderMenu() {
     const filtered = menuItems.filter((item) => item.category === state.activeCategory);
     itemCount.textContent = `${filtered.length} menu`;
     menuGrid.innerHTML = filtered
       .map(
-        (item, index) => `
-          <article class="menu-card" data-aos="fade-up" data-aos-delay="${(index % 4) * 50}">
-            <div class="product-visual tone-${item.tone}">
-              <img src="${item.image}" alt="${item.name}" loading="lazy" />
-            </div>
-            <div class="menu-copy">
-              <h3>${item.name}</h3>
-              <p>${item.description}</p>
-            </div>
-            <div class="menu-card-footer">
-              <strong>${formatPrice(item.price)}</strong>
-              <button class="add-button" type="button" data-add="${item.id}" aria-label="Tambah ${item.name}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
-            </div>
-          </article>
-        `,
+        (item, index) => {
+          const qtyInCart = getItemQtyInCart(item.id);
+          const badgeHTML = qtyInCart > 0 
+            ? `<span class="card-qty-badge">${qtyInCart}</span>` 
+            : '';
+          return `
+            <article class="menu-card" data-aos="fade-up" data-aos-delay="${(index % 4) * 50}">
+              <div class="product-visual tone-${item.tone}">
+                ${badgeHTML}
+                <img src="${item.image}" alt="${item.name}" loading="lazy" />
+              </div>
+              <div class="menu-copy">
+                <h3>${item.name}</h3>
+                <p>${item.description}</p>
+              </div>
+              <div class="menu-card-footer">
+                <strong>${formatPrice(item.price)}</strong>
+                <button class="add-button" type="button" data-add="${item.id}" aria-label="Tambah ${item.name}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+            </article>
+          `;
+        }
       )
       .join('');
       
@@ -373,6 +410,7 @@ import { categories, menuItems } from '../data/menuData.js';
   }
 
   function renderCart() {
+    updateMenuBadges();
     const subtotal = cartSubtotal();
     const fee = serviceFee();
     const total = grandTotal();
@@ -399,20 +437,28 @@ import { categories, menuItems } from '../data/menuData.js';
 
     checkoutItems.innerHTML = state.cart
       .map(
-        (item) => `
-          <article class="checkout-item">
-            <div class="checkout-info">
-              <strong>${item.name}</strong>
-              <p>${cartDescription(item)}</p>
-              <span>${formatPrice(item.unitPrice)}</span>
-            </div>
-            <div class="qty-control" aria-label="Atur jumlah ${item.name}">
-              <button type="button" data-qty="minus" data-key="${item.key}">-</button>
-              <span>${item.qty}</span>
-              <button type="button" data-qty="plus" data-key="${item.key}">+</button>
-            </div>
-          </article>
-        `,
+        (item) => {
+          const imageSrc = item.image || (findItem(item.id)?.image || '');
+          return `
+            <article class="checkout-item">
+              <div class="checkout-left">
+                <div class="checkout-info">
+                  <strong>${item.name}</strong>
+                  <p>${cartDescription(item)}</p>
+                  <span>${formatPrice(item.unitPrice)}</span>
+                </div>
+                <div class="qty-control" aria-label="Atur jumlah ${item.name}">
+                  <button type="button" data-qty="minus" data-key="${item.key}">-</button>
+                  <span>${item.qty}</span>
+                  <button type="button" data-qty="plus" data-key="${item.key}">+</button>
+                </div>
+              </div>
+              <div class="checkout-right">
+                <img src="${imageSrc}" alt="${item.name}" class="checkout-item-img" />
+              </div>
+            </article>
+          `;
+        }
       )
       .join('');
   }
@@ -516,6 +562,7 @@ import { categories, menuItems } from '../data/menuData.js';
         key,
         id: item.id,
         name: item.name,
+        image: item.image,
         unitPrice: item.price + extraTotal,
         qty: 1,
         custom,
