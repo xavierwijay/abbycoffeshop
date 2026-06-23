@@ -9,7 +9,7 @@ import { categories, menuItems } from '../data/menuData.js';
 >
   <main class="app-bg">
     <section class="mobile-app" data-screen="menu">
-      <header class="app-header">
+      <header class="app-header" data-aos="fade-down">
         <div>
           <p class="eyebrow">Dine-in order</p>
           <h1>Brewline.co</h1>
@@ -17,7 +17,7 @@ import { categories, menuItems } from '../data/menuData.js';
         <div class="table-pill" data-table-label>Meja 01</div>
       </header>
 
-      <section class="hero-panel" aria-label="Ringkasan pemesanan">
+      <section class="hero-panel" aria-label="Ringkasan pemesanan" data-aos="fade-up" data-aos-delay="100">
         <div>
           <p class="hero-kicker">Pesan dari meja</p>
           <h2>Kopi, pastry, dan snack langsung ke dapur.</h2>
@@ -28,7 +28,7 @@ import { categories, menuItems } from '../data/menuData.js';
       </section>
 
       <section class="view view-menu" data-view="menu" aria-label="Katalog menu">
-        <div class="section-heading">
+        <div class="section-heading" data-aos="fade-up" data-aos-delay="150">
           <div>
             <p>Menu pilihan</p>
             <h2>Mau pesan apa?</h2>
@@ -36,7 +36,7 @@ import { categories, menuItems } from '../data/menuData.js';
           <span data-item-count>0 menu</span>
         </div>
 
-        <nav class="category-tabs" data-tabs aria-label="Kategori menu"></nav>
+        <nav class="category-tabs" data-tabs aria-label="Kategori menu" data-aos="fade-up" data-aos-delay="200"></nav>
         <div class="menu-grid" data-menu-grid></div>
       </section>
 
@@ -309,8 +309,8 @@ import { categories, menuItems } from '../data/menuData.js';
     itemCount.textContent = `${filtered.length} menu`;
     menuGrid.innerHTML = filtered
       .map(
-        (item) => `
-          <article class="menu-card">
+        (item, index) => `
+          <article class="menu-card" data-aos="fade-up" data-aos-delay="${(index % 4) * 50}">
             <div class="product-visual tone-${item.tone}">
               <img src="${item.image}" alt="${item.name}" loading="lazy" />
             </div>
@@ -328,6 +328,10 @@ import { categories, menuItems } from '../data/menuData.js';
         `,
       )
       .join('');
+      
+    if (window.AOS) {
+      window.AOS.refresh();
+    }
   }
 
   function cartDescription(item) {
