@@ -42,7 +42,11 @@ import { categories, menuItems } from '../data/menuData.js';
 
       <section class="view view-checkout" data-view="checkout" hidden aria-label="Keranjang belanja">
         <div class="view-topbar">
-          <button class="icon-button" type="button" data-go="menu" aria-label="Kembali ke menu">&lt;</button>
+          <button class="icon-button" type="button" data-go="menu" aria-label="Kembali ke menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
           <div>
             <p>Keranjang</p>
             <h2>Review Pesanan</h2>
@@ -50,6 +54,11 @@ import { categories, menuItems } from '../data/menuData.js';
         </div>
 
         <div class="checkout-list" data-checkout-items></div>
+
+        <div class="customer-info-panel">
+          <label for="customer-name">Nama Pemesan</label>
+          <input type="text" id="customer-name" placeholder="Masukkan nama Anda..." required />
+        </div>
 
         <div class="summary-panel">
           <div class="summary-row">
@@ -71,7 +80,11 @@ import { categories, menuItems } from '../data/menuData.js';
 
       <section class="view view-payment" data-view="payment" hidden aria-label="Simulasi pembayaran QRIS">
         <div class="view-topbar">
-          <button class="icon-button" type="button" data-go="checkout" aria-label="Kembali ke checkout">&lt;</button>
+          <button class="icon-button" type="button" data-go="checkout" aria-label="Kembali ke checkout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
           <div>
             <p>Pembayaran</p>
             <h2>QRIS Simulasi</h2>
@@ -81,7 +94,33 @@ import { categories, menuItems } from '../data/menuData.js';
         <div class="payment-panel">
           <div class="qris-card" aria-label="QRIS statis simulasi">
             <div class="qris-grid" aria-hidden="true">
-              {Array.from({ length: 81 }).map((_, index) => <i class={index % 3 === 0 || index % 7 === 0 ? 'mark' : ''}></i>)}
+              {Array.from({ length: 81 }).map((_, index) => {
+                const r = Math.floor(index / 9);
+                const c = index % 9;
+                
+                // Finder patterns (3x3 squares in top-left, top-right, bottom-left)
+                // Use array inclusion to avoid '<' and '>' which confuse the Astro parser
+                const isTopLeft = [0, 1, 2].includes(r) && [0, 1, 2].includes(c);
+                const isTopLeftMark = isTopLeft && !(r === 1 && c === 1);
+                
+                const isTopRight = [0, 1, 2].includes(r) && [6, 7, 8].includes(c);
+                const isTopRightMark = isTopRight && !(r === 1 && c === 7);
+                
+                const isBottomLeft = [6, 7, 8].includes(r) && [0, 1, 2].includes(c);
+                const isBottomLeftMark = isBottomLeft && !(r === 7 && c === 1);
+                
+                const isFinder = isTopLeft || isTopRight || isBottomLeft;
+                let isMark = false;
+                
+                if (isFinder) {
+                  isMark = isTopLeftMark || isTopRightMark || isBottomLeftMark;
+                } else {
+                  // Deterministic hash to simulate normal QR code pixels
+                  isMark = (index * 13 + 7) % 3 === 0 || (index * 5 + 2) % 4 === 0;
+                }
+                
+                return <i class={isMark ? 'mark' : ''}></i>;
+              })}
             </div>
             <p>QRIS BREWLINE TABLE ORDER</p>
           </div>
@@ -95,7 +134,12 @@ import { categories, menuItems } from '../data/menuData.js';
 
       <section class="view view-status" data-view="status" hidden aria-label="Status pesanan akhir">
         <div class="success-hero">
-          <div class="success-mark" aria-hidden="true">OK</div>
+          <div class="success-mark" aria-hidden="true">
+            <svg class="checkmark-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+              <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+              <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+          </div>
           <p>Pembayaran berhasil</p>
           <h2>Pesanan masuk ke bar.</h2>
         </div>
@@ -104,6 +148,10 @@ import { categories, menuItems } from '../data/menuData.js';
           <div class="receipt-head">
             <span data-receipt-table>Meja 01</span>
             <strong data-receipt-queue>A-000</strong>
+          </div>
+          <div class="receipt-customer" style="margin-bottom: 12px; font-size: 0.85rem; font-weight: 800; color: #40544c; display: flex; justify-content: space-between;">
+            <span>Nama Pemesan:</span>
+            <strong data-receipt-name style="color: #17211d;">-</strong>
           </div>
           <div class="receipt-items" data-receipt-items></div>
           <div class="summary-line"></div>
@@ -120,11 +168,14 @@ import { categories, menuItems } from '../data/menuData.js';
           </div>
           <div class="progress-step active current">
             <span></span>
-            <p>Sedang Diracik</p>
+            <div>
+              <p>Sedang Diracik</p>
+              <span class="timer-display" data-timer-display>Estimasi siap: 07:00</span>
+            </div>
           </div>
           <div class="progress-step">
             <span></span>
-            <p>Siap Diantar</p>
+            <p>Siap Diambil</p>
           </div>
         </div>
 
@@ -145,6 +196,12 @@ import { categories, menuItems } from '../data/menuData.js';
           <div data-sheet-content></div>
         </aside>
       </div>
+
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" data-loading hidden>
+        <div class="loader-spinner"></div>
+        <p class="loading-text" data-loading-text>Menyiapkan...</p>
+      </div>
     </section>
   </main>
 </BaseLayout>
@@ -156,9 +213,12 @@ import { categories, menuItems } from '../data/menuData.js';
     maximumFractionDigits: 0,
   });
 
-  const storeKey = 'krema-table-order-cart';
+  const storeKey = 'brewline-table-order-cart';
   const screen = document.querySelector('[data-screen]');
+  const loadingOverlay = document.querySelector('[data-loading]');
+  const loadingText = document.querySelector('[data-loading-text]');
   const tableLabels = document.querySelectorAll('[data-table-label], [data-receipt-table]');
+  let timerInterval = null;
   const tabs = document.querySelector('[data-tabs]');
   const menuGrid = document.querySelector('[data-menu-grid]');
   const itemCount = document.querySelector('[data-item-count]');
@@ -188,6 +248,7 @@ import { categories, menuItems } from '../data/menuData.js';
     custom: null,
     view: 'menu',
     receipt: null,
+    customerName: '',
   };
 
   tableLabels.forEach((node) => {
@@ -249,7 +310,7 @@ import { categories, menuItems } from '../data/menuData.js';
       .map(
         (item) => `
           <article class="menu-card">
-            <div class="product-visual">
+            <div class="product-visual tone-${item.tone}">
               <img src="${item.image}" alt="${item.name}" loading="lazy" />
             </div>
             <div class="menu-copy">
@@ -319,6 +380,66 @@ import { categories, menuItems } from '../data/menuData.js';
       .join('');
   }
 
+  function showViewWithLoading(name, message, delay = 1000, callback = null) {
+    if ((name === 'checkout' || name === 'payment') && !state.cart.length) {
+      showView('menu');
+      return;
+    }
+    
+    loadingText.textContent = message;
+    loadingOverlay.hidden = false;
+    loadingOverlay.offsetHeight; // force reflow
+    loadingOverlay.classList.add('active');
+    
+    setTimeout(() => {
+      if (callback) callback();
+      showView(name);
+      loadingOverlay.classList.remove('active');
+      setTimeout(() => {
+        loadingOverlay.hidden = true;
+      }, 250);
+    }, delay);
+  }
+
+  function startProgressTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    
+    let timeLeft = 7 * 60; // 7 minutes in seconds
+    const timerEl = document.querySelector('[data-timer-display]');
+    const steps = document.querySelectorAll('.progress-step');
+    
+    // Reset steps
+    steps[0].classList.add('active');
+    steps[1].classList.add('active', 'current');
+    steps[2].classList.remove('active', 'current');
+    
+    function updateDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      if (timerEl) {
+        timerEl.textContent = `Estimasi siap: ${formatted}`;
+      }
+    }
+    
+    updateDisplay();
+    
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        clearInterval(timerInterval);
+        steps[1].classList.remove('current');
+        steps[2].classList.add('active', 'current');
+        if (timerEl) {
+          timerEl.textContent = 'Pesanan selesai!';
+        }
+      } else {
+        updateDisplay();
+      }
+    }, 1000);
+  }
+
   function showView(name) {
     if ((name === 'checkout' || name === 'payment') && !state.cart.length) {
       name = 'menu';
@@ -374,7 +495,7 @@ import { categories, menuItems } from '../data/menuData.js';
 
     sheetContent.innerHTML = `
       <div class="sheet-product">
-        <div class="product-visual"><img src="${item.image}" alt="${item.name}" loading="lazy" /></div>
+        <div class="product-visual tone-${item.tone}"><img src="${item.image}" alt="${item.name}" loading="lazy" /></div>
         <div>
           <p>${item.category}</p>
           <h2>${item.name}</h2>
@@ -469,8 +590,11 @@ import { categories, menuItems } from '../data/menuData.js';
       queue: `A-${Math.floor(100 + Math.random() * 900)}`,
       total: grandTotal(),
       items: state.cart.map((item) => ({ ...item })),
+      customerName: state.customerName,
     };
     receiptQueue.textContent = state.receipt.queue;
+    const nameEl = document.querySelector('[data-receipt-name]');
+    if (nameEl) nameEl.textContent = state.receipt.customerName;
     receiptItems.innerHTML = state.receipt.items
       .map(
         (item) => `
@@ -506,7 +630,22 @@ import { categories, menuItems } from '../data/menuData.js';
 
     const goButton = event.target.closest('[data-go]');
     if (goButton) {
-      showView(goButton.dataset.go);
+      const dest = goButton.dataset.go;
+      if (dest === 'payment') {
+        const nameInput = document.querySelector('#customer-name');
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (!name) {
+          if (nameInput) {
+            nameInput.focus();
+            nameInput.style.borderColor = '#d66c46';
+          }
+          return;
+        }
+        state.customerName = name;
+        showViewWithLoading('payment', 'Menyiapkan QRIS...', 1000);
+      } else {
+        showView(dest);
+      }
       return;
     }
 
@@ -533,12 +672,24 @@ import { categories, menuItems } from '../data/menuData.js';
     }
 
     if (event.target.closest('[data-pay-success]')) {
-      createReceipt();
-      showView('status');
+      showViewWithLoading('status', 'Memverifikasi Pembayaran...', 1200, () => {
+        createReceipt();
+        startProgressTimer();
+      });
       return;
     }
 
     if (event.target.closest('[data-new-order]')) {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      const nameInput = document.querySelector('#customer-name');
+      if (nameInput) {
+        nameInput.value = '';
+        nameInput.style.borderColor = '';
+      }
+      state.customerName = '';
       showView('menu');
     }
   });
