@@ -321,7 +321,10 @@ import { categories, menuItems } from '../data/menuData.js';
             <div class="menu-card-footer">
               <strong>${formatPrice(item.price)}</strong>
               <button class="add-button" type="button" data-add="${item.id}" aria-label="Tambah ${item.name}">
-                <span>+</span> Tambah
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
               </button>
             </div>
           </article>
@@ -728,4 +731,11 @@ import { categories, menuItems } from '../data/menuData.js';
   renderMenu();
   renderCart();
   showView('menu');
+
+  // Refresh AOS after initial load render completes
+  setTimeout(() => {
+    if (window.AOS) {
+      window.AOS.refresh();
+    }
+  }, 150);
 </script>

@@ -32,7 +32,13 @@ const {
             duration: 800,
             once: true,
             easing: 'ease-out-cubic',
+            offset: 40,
           });
+        }
+      });
+      window.addEventListener('load', () => {
+        if (typeof AOS !== 'undefined') {
+          AOS.refresh();
         }
       });
     </script>
