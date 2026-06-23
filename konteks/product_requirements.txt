@@ -1,0 +1,99 @@
+# Product Requirement Document (PRD)
+
+**Proyek:** Sistem Pemesanan Kafe Mandiri (*Dine-In Web App Prototype*)  
+**Teknologi:** Astro + Tailwind CSS  
+**Sifat Proyek:** Front-End Only Prototype (Tugas Kuliah)  
+**Status Dokumen:** Prototyping Phase  
+
+---
+
+## 1. Ringkasan Produk (Product Overview)
+
+Website ini adalah sebuah *prototype web app* berbasis *mobile-first* yang disimulasikan sebagai sistem pemesanan makanan dan minuman langsung dari meja dalam kafe (*dine-in*). Pengguna dapat memindai simulasi QR code meja, memilih menu, melakukan kustomisasi rasa/ukuran, melihat ringkasan belanja, dan melakukan simulasi pembayaran hingga mendapatkan nomor antrean.
+
+### Tujuan Utama Prototype (Key Goals)
+* Menampilkan visual UI/UX *coffee shop* modern yang responsif dan interaktif (*mobile-first*).
+* Menunjukkan alur pemesanan mandiri yang logis dari awal hingga selesai (Gacoan-style: bayar di awal).
+* Menggunakan manipulasi data lokal di sisi *front-end* tanpa bergantung pada *database server* atau *backend*.
+
+---
+
+## 2. Alur Pengguna (User Journey / Flow)
+[Buka URL dengan Parameter Meja]
+│
+▼
+[Pilih Kategori & Menu]
+│
+▼
+[Kustomisasi Add-ons via Modal]
+│
+▼
+[Keranjang Belanja / Cart]
+│
+▼
+[Simulasi Pembayaran QRIS]
+│
+▼
+[Halaman Status Pesanan Akhir]
+---
+
+## 3. Kebutuhan Fitur (Functional Requirements)
+
+### FR-01: Deteksi Nomor Meja Otomatis
+* **Deskripsi:** Sistem harus bisa membaca nomor meja tempat pelanggan "duduk".
+* **Implementasi Front-End:** Aplikasi membaca URL Parameter (contoh: `localhost:4321/?table=12`).
+* **Perilaku UI:** Jika parameter ada, tampilkan teks `"Meja 12"` di bagian *header* web secara permanen. Jika tidak ada parameter, berikan nilai *default* (misal: `"Meja 01"`).
+
+### FR-02: Katalog Menu Digital & Tab Kategori
+* **Deskripsi:** Menampilkan menu kopi dan makanan berdasarkan data yang sudah di-*hardcode* (`menuData.js`).
+* **Perilaku UI:**
+  * Terdapat navigasi *tab* horizontal di bagian atas untuk memfilter kategori (`Coffee`, `Non-Coffee`, `Manual Brew`, `Pastry & Snack`).
+  * Setiap kartu produk menampilkan: Gambar, Nama, Deskripsi Singkat, Harga, dan Tombol "Tambah".
+
+### FR-03: Modal Kustomisasi Produk (*Bottom Sheet*)
+* **Deskripsi:** Memungkinkan pelanggan memilih opsi tambahan (*sugar level*, *ice*, atau *extra shot*) sebelum masuk keranjang.
+* **Perilaku UI:**
+  * Jika menu memiliki opsi `customization`, klik tombol "Tambah" akan membuka modal dari bawah (*bottom sheet*).
+  * Jika menu tidak memiliki kustomisasi (misal: French Fries), produk langsung masuk ke keranjang dengan jumlah +1.
+  * Total harga di dalam modal harus berubah secara dinamis jika pengguna memilih komponen berbayar (misal: tambah *oatmilk* +Rp 6.000).
+
+### FR-04: Keranjang Belanja (*Sticky Bottom Bar & Cart Page*)
+* **Deskripsi:** Menyimpan sementara daftar belanjaan pengguna selama sesi berlangsung.
+* **Perilaku UI:**
+  * Jika keranjang berisi minimal 1 item, sebuah *sticky bar* akan muncul di bagian paling bawah layar menampilkan: `[X] Item | Total: Rp XXX` dan tombol `"Lihat Keranjang"`.
+  * Di halaman/view keranjang, pengguna bisa menambah (`+`) atau mengurangi (`-`) kuantitas item. Jika kuantitas menjadi 0, item dihapus dari keranjang.
+
+### FR-05: Simulasi Pembayaran QRIS
+* **Deskripsi:** Menyediakan gerbang pembayaran bohongan untuk menyelesaikan alur pemesanan (bayar dulu baru diproses).
+* **Perilaku UI:** Menampilkan gambar QRIS statis, total tagihan, dan satu tombol menonjol bertuliskan `"Simulasikan Pembayaran Berhasil"`.
+
+### FR-06: Status Pesanan Akhir
+* **Deskripsi:** Halaman penutup yang menandakan pesanan sukses dikirim dan disimulasikan sedang dibuat oleh dapur.
+* **Perilaku UI:** Menampilkan resi digital, nomor meja, nomor antrean otomatis (menggunakan angka acak/randomized), dan indikator status progres visual (`Pesanan Diterima` -> `Sedang Diracik` -> `Siap Diantar`).
+
+---
+
+## 4. Kebutuhan Non-Fungsional (Non-Functional Requirements)
+
+* **Desain Mobile-First:** Tampilan website harus dioptimalkan untuk layar *smartphone* (resolusi ideal lebar 360px–440px), karena di kafe nyata pelanggan memesan lewat HP.
+* **Local State Management:** Karena menggunakan Astro, untuk interaksi yang dinamis (seperti keranjang belanja dan modal), gunakan komponen pulau (*Hydrated Components* menggunakan vanilla JS, Alpine.js, Preact, atau React) agar *state* keranjang berjalan lancar di browser tanpa *refresh*.
+* **Kecepatan Muat Halaman:** Memanfaatkan optimasi gambar bawaan Astro (`<Image />`) agar performa *loading* awal menu terasa instan dan ringan bagi kuota pengguna.
+
+---
+
+## 5. Rencana Struktur Komponen (Astro Project Structure)
+
+```text
+src/
+├── components/
+│   ├── Header.astro           # Menampilkan logo kafe & nomor meja (statis)
+│   ├── CategoryTabs.jsx       # Navigasi filter kategori (interaktif)
+│   ├── MenuCard.jsx           # Card untuk per-item menu
+│   ├── CustomizationModal.jsx # Bottom sheet untuk opsi kustomisasi kopi
+│   └── BottomCartBar.jsx      # Sticky bar pemicu halaman checkout
+├── data/
+│   └── menuData.js            # File hardcoded data menu & opsi custom
+└── pages/
+    ├── index.astro            # Halaman utama (Katalog Menu)
+    ├── cart.astro             # Halaman ringkasan keranjang & simulasi bayar
+    └── status.astro           # Halaman sukses & status antrean dapur

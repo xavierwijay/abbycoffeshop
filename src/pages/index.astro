@@ -1,0 +1,566 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { categories, menuItems } from '../data/menuData.js';
+---
+
+<BaseLayout
+  title="Brewline.co | Table Order"
+  description="Prototype web app pemesanan mandiri untuk kafe dine-in."
+>
+  <main class="app-bg">
+    <section class="mobile-app" data-screen="menu">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Dine-in order</p>
+          <h1>Brewline.co</h1>
+        </div>
+        <div class="table-pill" data-table-label>Meja 01</div>
+      </header>
+
+      <section class="hero-panel" aria-label="Ringkasan pemesanan">
+        <div>
+          <p class="hero-kicker">Pesan dari meja</p>
+          <h2>Kopi, pastry, dan snack langsung ke dapur.</h2>
+        </div>
+        <div class="hero-cup" aria-hidden="true">
+          <span></span>
+        </div>
+      </section>
+
+      <section class="view view-menu" data-view="menu" aria-label="Katalog menu">
+        <div class="section-heading">
+          <div>
+            <p>Menu pilihan</p>
+            <h2>Mau pesan apa?</h2>
+          </div>
+          <span data-item-count>0 menu</span>
+        </div>
+
+        <nav class="category-tabs" data-tabs aria-label="Kategori menu"></nav>
+        <div class="menu-grid" data-menu-grid></div>
+      </section>
+
+      <section class="view view-checkout" data-view="checkout" hidden aria-label="Keranjang belanja">
+        <div class="view-topbar">
+          <button class="icon-button" type="button" data-go="menu" aria-label="Kembali ke menu">&lt;</button>
+          <div>
+            <p>Keranjang</p>
+            <h2>Review Pesanan</h2>
+          </div>
+        </div>
+
+        <div class="checkout-list" data-checkout-items></div>
+
+        <div class="summary-panel">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <strong data-subtotal>Rp 0</strong>
+          </div>
+          <div class="summary-row">
+            <span>Service dine-in</span>
+            <strong data-service>Rp 0</strong>
+          </div>
+          <div class="summary-line"></div>
+          <div class="summary-row total">
+            <span>Total bayar</span>
+            <strong data-grand-total>Rp 0</strong>
+          </div>
+          <button class="primary-action" type="button" data-go="payment">Lanjut Pembayaran</button>
+        </div>
+      </section>
+
+      <section class="view view-payment" data-view="payment" hidden aria-label="Simulasi pembayaran QRIS">
+        <div class="view-topbar">
+          <button class="icon-button" type="button" data-go="checkout" aria-label="Kembali ke checkout">&lt;</button>
+          <div>
+            <p>Pembayaran</p>
+            <h2>QRIS Simulasi</h2>
+          </div>
+        </div>
+
+        <div class="payment-panel">
+          <div class="qris-card" aria-label="QRIS statis simulasi">
+            <div class="qris-grid" aria-hidden="true">
+              {Array.from({ length: 81 }).map((_, index) => <i class={index % 3 === 0 || index % 7 === 0 ? 'mark' : ''}></i>)}
+            </div>
+            <p>QRIS BREWLINE TABLE ORDER</p>
+          </div>
+          <div class="summary-row total">
+            <span>Total tagihan</span>
+            <strong data-payment-total>Rp 0</strong>
+          </div>
+          <button class="primary-action" type="button" data-pay-success>Simulasikan Pembayaran Berhasil</button>
+        </div>
+      </section>
+
+      <section class="view view-status" data-view="status" hidden aria-label="Status pesanan akhir">
+        <div class="success-hero">
+          <div class="success-mark" aria-hidden="true">OK</div>
+          <p>Pembayaran berhasil</p>
+          <h2>Pesanan masuk ke bar.</h2>
+        </div>
+
+        <div class="receipt-panel">
+          <div class="receipt-head">
+            <span data-receipt-table>Meja 01</span>
+            <strong data-receipt-queue>A-000</strong>
+          </div>
+          <div class="receipt-items" data-receipt-items></div>
+          <div class="summary-line"></div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <strong data-receipt-total>Rp 0</strong>
+          </div>
+        </div>
+
+        <div class="progress-panel" aria-label="Progress pesanan">
+          <div class="progress-step active">
+            <span></span>
+            <p>Pesanan Diterima</p>
+          </div>
+          <div class="progress-step active current">
+            <span></span>
+            <p>Sedang Diracik</p>
+          </div>
+          <div class="progress-step">
+            <span></span>
+            <p>Siap Diantar</p>
+          </div>
+        </div>
+
+        <button class="secondary-action" type="button" data-new-order>Pesan Lagi</button>
+      </section>
+
+      <div class="bottom-cart" data-bottom-cart hidden>
+        <div>
+          <strong data-cart-count>0 item</strong>
+          <span data-cart-total>Rp 0</span>
+        </div>
+        <button type="button" data-go="checkout">Lihat Keranjang</button>
+      </div>
+
+      <div class="sheet-backdrop" data-sheet hidden>
+        <aside class="bottom-sheet" role="dialog" aria-modal="true" aria-label="Kustomisasi menu">
+          <div class="sheet-grip" aria-hidden="true"></div>
+          <div data-sheet-content></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script define:vars={{ categories, menuItems }}>
+  const currency = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  });
+
+  const storeKey = 'krema-table-order-cart';
+  const screen = document.querySelector('[data-screen]');
+  const tableLabels = document.querySelectorAll('[data-table-label], [data-receipt-table]');
+  const tabs = document.querySelector('[data-tabs]');
+  const menuGrid = document.querySelector('[data-menu-grid]');
+  const itemCount = document.querySelector('[data-item-count]');
+  const bottomCart = document.querySelector('[data-bottom-cart]');
+  const cartCount = document.querySelector('[data-cart-count]');
+  const cartTotal = document.querySelector('[data-cart-total]');
+  const checkoutItems = document.querySelector('[data-checkout-items]');
+  const subtotalEl = document.querySelector('[data-subtotal]');
+  const serviceEl = document.querySelector('[data-service]');
+  const grandTotalEl = document.querySelector('[data-grand-total]');
+  const paymentTotalEl = document.querySelector('[data-payment-total]');
+  const receiptQueue = document.querySelector('[data-receipt-queue]');
+  const receiptItems = document.querySelector('[data-receipt-items]');
+  const receiptTotal = document.querySelector('[data-receipt-total]');
+  const sheet = document.querySelector('[data-sheet]');
+  const sheetContent = document.querySelector('[data-sheet-content]');
+  const views = [...document.querySelectorAll('[data-view]')];
+
+  const params = new URLSearchParams(window.location.search);
+  const tableNumber = params.get('table') || '01';
+  const tableLabel = `Meja ${tableNumber}`;
+
+  const state = {
+    activeCategory: categories[0],
+    cart: loadCart(),
+    activeItem: null,
+    custom: null,
+    view: 'menu',
+    receipt: null,
+  };
+
+  tableLabels.forEach((node) => {
+    node.textContent = tableLabel;
+  });
+
+  function formatPrice(value) {
+    return currency.format(value).replace('IDR', 'Rp').trim();
+  }
+
+  function loadCart() {
+    try {
+      return JSON.parse(localStorage.getItem(storeKey)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveCart() {
+    localStorage.setItem(storeKey, JSON.stringify(state.cart));
+  }
+
+  function findItem(id) {
+    return menuItems.find((item) => item.id === id);
+  }
+
+  function cartSubtotal() {
+    return state.cart.reduce((total, item) => total + item.unitPrice * item.qty, 0);
+  }
+
+  function serviceFee() {
+    return state.cart.length ? 2000 : 0;
+  }
+
+  function grandTotal() {
+    return cartSubtotal() + serviceFee();
+  }
+
+  function totalQty() {
+    return state.cart.reduce((total, item) => total + item.qty, 0);
+  }
+
+  function renderTabs() {
+    tabs.innerHTML = categories
+      .map(
+        (category) => `
+          <button class="category-tab ${category === state.activeCategory ? 'active' : ''}" type="button" data-category="${category}">
+            ${category}
+          </button>
+        `,
+      )
+      .join('');
+  }
+
+  function renderMenu() {
+    const filtered = menuItems.filter((item) => item.category === state.activeCategory);
+    itemCount.textContent = `${filtered.length} menu`;
+    menuGrid.innerHTML = filtered
+      .map(
+        (item) => `
+          <article class="menu-card">
+            <div class="product-visual">
+              <img src="${item.image}" alt="${item.name}" loading="lazy" />
+            </div>
+            <div class="menu-copy">
+              <h3>${item.name}</h3>
+              <p>${item.description}</p>
+            </div>
+            <div class="menu-card-footer">
+              <strong>${formatPrice(item.price)}</strong>
+              <button class="add-button" type="button" data-add="${item.id}" aria-label="Tambah ${item.name}">
+                <span>+</span> Tambah
+              </button>
+            </div>
+          </article>
+        `,
+      )
+      .join('');
+  }
+
+  function cartDescription(item) {
+    if (!item.custom) return 'Tanpa kustomisasi';
+    const extras = item.custom.extras.length ? item.custom.extras.join(', ') : 'No extra';
+    return `${item.custom.sugar}, ${item.custom.ice}, ${extras}`;
+  }
+
+  function renderCart() {
+    const subtotal = cartSubtotal();
+    const fee = serviceFee();
+    const total = grandTotal();
+    const qty = totalQty();
+
+    bottomCart.hidden = state.view !== 'menu' || qty === 0;
+    cartCount.textContent = `${qty} item`;
+    cartTotal.textContent = formatPrice(subtotal);
+    subtotalEl.textContent = formatPrice(subtotal);
+    serviceEl.textContent = formatPrice(fee);
+    grandTotalEl.textContent = formatPrice(total);
+    paymentTotalEl.textContent = formatPrice(total);
+
+    if (!state.cart.length) {
+      checkoutItems.innerHTML = `
+        <div class="empty-state">
+          <strong>Keranjang masih kosong.</strong>
+          <p>Pilih menu favorit dari katalog untuk mulai memesan.</p>
+          <button class="secondary-action" type="button" data-go="menu">Pilih Menu</button>
+        </div>
+      `;
+      return;
+    }
+
+    checkoutItems.innerHTML = state.cart
+      .map(
+        (item) => `
+          <article class="checkout-item">
+            <div class="checkout-info">
+              <strong>${item.name}</strong>
+              <p>${cartDescription(item)}</p>
+              <span>${formatPrice(item.unitPrice)}</span>
+            </div>
+            <div class="qty-control" aria-label="Atur jumlah ${item.name}">
+              <button type="button" data-qty="minus" data-key="${item.key}">-</button>
+              <span>${item.qty}</span>
+              <button type="button" data-qty="plus" data-key="${item.key}">+</button>
+            </div>
+          </article>
+        `,
+      )
+      .join('');
+  }
+
+  function showView(name) {
+    if ((name === 'checkout' || name === 'payment') && !state.cart.length) {
+      name = 'menu';
+    }
+    state.view = name;
+    screen.dataset.screen = name;
+    views.forEach((view) => {
+      view.hidden = view.dataset.view !== name;
+    });
+    renderCart();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function customizationKey(item, custom) {
+    if (!custom) return `${item.id}:default`;
+    return `${item.id}:${custom.sugar}:${custom.ice}:${[...custom.extras].sort().join('|')}`;
+  }
+
+  function addToCart(item, custom = null) {
+    const extraTotal = custom
+      ? item.customization.extras
+          .filter((extra) => custom.extras.includes(extra.name))
+          .reduce((total, extra) => total + extra.price, 0)
+      : 0;
+    const key = customizationKey(item, custom);
+    const existing = state.cart.find((cartItem) => cartItem.key === key);
+
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      state.cart.push({
+        key,
+        id: item.id,
+        name: item.name,
+        unitPrice: item.price + extraTotal,
+        qty: 1,
+        custom,
+      });
+    }
+
+    saveCart();
+    renderCart();
+  }
+
+  function renderSheet() {
+    const item = state.activeItem;
+    if (!item || !state.custom) return;
+
+    const extraTotal = item.customization.extras
+      .filter((extra) => state.custom.extras.includes(extra.name))
+      .reduce((total, extra) => total + extra.price, 0);
+    const total = item.price + extraTotal;
+
+    sheetContent.innerHTML = `
+      <div class="sheet-product">
+        <div class="product-visual"><img src="${item.image}" alt="${item.name}" loading="lazy" /></div>
+        <div>
+          <p>${item.category}</p>
+          <h2>${item.name}</h2>
+          <span>${formatPrice(item.price)}</span>
+        </div>
+      </div>
+
+      <fieldset class="option-group">
+        <legend>Sugar level</legend>
+        ${item.customization.sugar
+          .map(
+            (option) => `
+              <label class="choice-row">
+                <span>${option}</span>
+                <input type="radio" name="sugar" value="${option}" data-option="sugar" ${state.custom.sugar === option ? 'checked' : ''} />
+              </label>
+            `,
+          )
+          .join('')}
+      </fieldset>
+
+      <fieldset class="option-group">
+        <legend>Ice / temperature</legend>
+        ${item.customization.ice
+          .map(
+            (option) => `
+              <label class="choice-row">
+                <span>${option}</span>
+                <input type="radio" name="ice" value="${option}" data-option="ice" ${state.custom.ice === option ? 'checked' : ''} />
+              </label>
+            `,
+          )
+          .join('')}
+      </fieldset>
+
+      <fieldset class="option-group">
+        <legend>Add-ons</legend>
+        ${item.customization.extras
+          .map(
+            (extra) => `
+              <label class="choice-row">
+                <span>${extra.name}</span>
+                <em>+${formatPrice(extra.price)}</em>
+                <input type="checkbox" value="${extra.name}" data-option="extra" ${state.custom.extras.includes(extra.name) ? 'checked' : ''} />
+              </label>
+            `,
+          )
+          .join('')}
+      </fieldset>
+
+      <div class="sheet-actions">
+        <button class="secondary-action" type="button" data-close-sheet>Batal</button>
+        <button class="primary-action" type="button" data-confirm-custom>Tambah - ${formatPrice(total)}</button>
+      </div>
+    `;
+  }
+
+  function openSheet(item) {
+    state.activeItem = item;
+    state.custom = {
+      sugar: item.customization.sugar[0],
+      ice: item.customization.ice[0],
+      extras: [],
+    };
+    renderSheet();
+    sheet.hidden = false;
+    requestAnimationFrame(() => sheet.classList.add('open'));
+  }
+
+  function closeSheet() {
+    sheet.classList.remove('open');
+    setTimeout(() => {
+      sheet.hidden = true;
+      state.activeItem = null;
+      state.custom = null;
+    }, 160);
+  }
+
+  function changeQty(key, direction) {
+    const item = state.cart.find((cartItem) => cartItem.key === key);
+    if (!item) return;
+    item.qty += direction === 'plus' ? 1 : -1;
+    state.cart = state.cart.filter((cartItem) => cartItem.qty > 0);
+    saveCart();
+    renderCart();
+    if (!state.cart.length) showView('menu');
+  }
+
+  function createReceipt() {
+    state.receipt = {
+      table: tableLabel,
+      queue: `A-${Math.floor(100 + Math.random() * 900)}`,
+      total: grandTotal(),
+      items: state.cart.map((item) => ({ ...item })),
+    };
+    receiptQueue.textContent = state.receipt.queue;
+    receiptItems.innerHTML = state.receipt.items
+      .map(
+        (item) => `
+          <div class="receipt-item">
+            <span>${item.qty}x ${item.name}</span>
+            <strong>${formatPrice(item.unitPrice * item.qty)}</strong>
+          </div>
+        `,
+      )
+      .join('');
+    receiptTotal.textContent = formatPrice(state.receipt.total);
+    state.cart = [];
+    saveCart();
+  }
+
+  document.addEventListener('click', (event) => {
+    const categoryButton = event.target.closest('[data-category]');
+    if (categoryButton) {
+      state.activeCategory = categoryButton.dataset.category;
+      renderTabs();
+      renderMenu();
+      return;
+    }
+
+    const addButton = event.target.closest('[data-add]');
+    if (addButton) {
+      const item = findItem(addButton.dataset.add);
+      if (!item) return;
+      if (item.customization) openSheet(item);
+      else addToCart(item);
+      return;
+    }
+
+    const goButton = event.target.closest('[data-go]');
+    if (goButton) {
+      showView(goButton.dataset.go);
+      return;
+    }
+
+    const qtyButton = event.target.closest('[data-qty]');
+    if (qtyButton) {
+      changeQty(qtyButton.dataset.key, qtyButton.dataset.qty);
+      return;
+    }
+
+    if (event.target.closest('[data-close-sheet]')) {
+      closeSheet();
+      return;
+    }
+
+    if (event.target === sheet) {
+      closeSheet();
+      return;
+    }
+
+    if (event.target.closest('[data-confirm-custom]')) {
+      addToCart(state.activeItem, { ...state.custom, extras: [...state.custom.extras] });
+      closeSheet();
+      return;
+    }
+
+    if (event.target.closest('[data-pay-success]')) {
+      createReceipt();
+      showView('status');
+      return;
+    }
+
+    if (event.target.closest('[data-new-order]')) {
+      showView('menu');
+    }
+  });
+
+  document.addEventListener('change', (event) => {
+    const option = event.target.closest('[data-option]');
+    if (!option || !state.custom) return;
+
+    if (option.dataset.option === 'sugar') state.custom.sugar = option.value;
+    if (option.dataset.option === 'ice') state.custom.ice = option.value;
+    if (option.dataset.option === 'extra') {
+      const selected = new Set(state.custom.extras);
+      if (option.checked) selected.add(option.value);
+      else selected.delete(option.value);
+      state.custom.extras = [...selected];
+    }
+
+    renderSheet();
+  });
+
+  renderTabs();
+  renderMenu();
+  renderCart();
+  showView('menu');
+</script>
