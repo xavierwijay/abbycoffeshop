@@ -1022,11 +1022,19 @@ button {
   box-shadow: 0 0 0 3px rgba(88, 161, 133, 0.12);
 }
 
-/* Timer text display under Sedang Diracik */
-.timer-display {
-  display: block;
-  font-size: 0.76rem;
-  color: #d66c46;
+/* Timer container and text styling under success hero */
+.status-timer-container {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #55685f;
   font-weight: 800;
-  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-timer-container strong {
+  color: #d66c46;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }

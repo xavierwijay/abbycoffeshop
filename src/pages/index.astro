@@ -142,6 +142,10 @@ import { categories, menuItems } from '../data/menuData.js';
           </div>
           <p>Pembayaran berhasil</p>
           <h2>Pesanan masuk ke bar.</h2>
+          <div class="status-timer-container" data-timer-container>
+            <span>Pesanan siap dalam: </span>
+            <strong data-timer-display>07:00</strong>
+          </div>
         </div>
 
         <div class="receipt-panel">
@@ -168,10 +172,7 @@ import { categories, menuItems } from '../data/menuData.js';
           </div>
           <div class="progress-step active current">
             <span></span>
-            <div>
-              <p>Sedang Diracik</p>
-              <span class="timer-display" data-timer-display>Estimasi siap: 07:00</span>
-            </div>
+            <p>Sedang Diracik</p>
           </div>
           <div class="progress-step">
             <span></span>
@@ -405,7 +406,11 @@ import { categories, menuItems } from '../data/menuData.js';
     if (timerInterval) clearInterval(timerInterval);
     
     let timeLeft = 7 * 60; // 7 minutes in seconds
-    const timerEl = document.querySelector('[data-timer-display]');
+    const timerContainer = document.querySelector('[data-timer-container]');
+    if (timerContainer) {
+      timerContainer.innerHTML = '<span>Pesanan siap dalam: </span><strong data-timer-display>07:00</strong>';
+    }
+    
     const steps = document.querySelectorAll('.progress-step');
     
     // Reset steps
@@ -417,8 +422,9 @@ import { categories, menuItems } from '../data/menuData.js';
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
       const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-      if (timerEl) {
-        timerEl.textContent = `Estimasi siap: ${formatted}`;
+      const currentTimerEl = document.querySelector('[data-timer-display]');
+      if (currentTimerEl) {
+        currentTimerEl.textContent = formatted;
       }
     }
     
@@ -431,8 +437,8 @@ import { categories, menuItems } from '../data/menuData.js';
         clearInterval(timerInterval);
         steps[1].classList.remove('current');
         steps[2].classList.add('active', 'current');
-        if (timerEl) {
-          timerEl.textContent = 'Pesanan selesai!';
+        if (timerContainer) {
+          timerContainer.innerHTML = '<span style="color: #58a185; font-weight: 900;">Pesanan siap diambil!</span>';
         }
       } else {
         updateDisplay();
@@ -690,6 +696,10 @@ import { categories, menuItems } from '../data/menuData.js';
         nameInput.style.borderColor = '';
       }
       state.customerName = '';
+      const timerContainer = document.querySelector('[data-timer-container]');
+      if (timerContainer) {
+        timerContainer.innerHTML = '<span>Pesanan siap dalam: </span><strong data-timer-display>07:00</strong>';
+      }
       showView('menu');
     }
   });
