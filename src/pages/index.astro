@@ -9,6 +9,12 @@ import { categories, menuItems } from '../data/menuData.js';
 >
   <main class="app-bg">
     <section class="mobile-app" data-screen="menu">
+      <div class="bg-mountains" aria-hidden="true">
+        <svg viewBox="0 0 430 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M-20 150 L50 70 L130 120 L210 50 L290 100 L370 40 L450 120 L450 150 Z" fill="rgba(32, 53, 45, 0.025)" />
+          <path d="M-20 150 L90 90 L180 130 L270 70 L350 110 L450 60 L450 150 Z" fill="rgba(32, 53, 45, 0.04)" />
+        </svg>
+      </div>
       <header class="app-header" data-aos="fade-down">
         <div class="brand-wrapper">
           <div class="brand-logo" aria-hidden="true">
@@ -416,7 +422,13 @@ import { categories, menuItems } from '../data/menuData.js';
     const total = grandTotal();
     const qty = totalQty();
 
-    bottomCart.hidden = state.view !== 'menu' || qty === 0;
+    const showCartBar = state.view === 'menu' && qty > 0;
+    bottomCart.hidden = !showCartBar;
+    if (showCartBar) {
+      screen.classList.add('has-bottom-cart');
+    } else {
+      screen.classList.remove('has-bottom-cart');
+    }
     cartCount.textContent = `${qty} item`;
     cartTotal.textContent = formatPrice(subtotal);
     subtotalEl.textContent = formatPrice(subtotal);
